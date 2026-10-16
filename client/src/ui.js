@@ -22,6 +22,7 @@ const el = {
     qBanner: $('#qBanner'), qRow: $('#qRow'), qText: $('#qText'), qOpts: $('#qOpts'), qTimer: $('#qTimer'),
     streak: $('#streakPill'), streakTxt: $('#streakTxt'), rush: $('#rushPill'), rushTxt: $('#rushTxt'), boost: $('#boostPill'), boostTxt: $('#boostTxt'),
     wheelBadge: $('#wheelBadge'), giftBadge: $('#giftBadge'), dailyBadge: $('#dailyBadge'), friend: $('#friendVal'),
+    giftBtn: $('[data-open="free"]'), giftLbl: $('[data-open="free"] .o1'),
     quest: $('#questLine'), chip: $('#stageChip'), cont: $('#btnContinue'), prompt: $('#promptBtn'), promptTxt: $('#promptTxt'), hotbar: $('#hotbar'), pathBtn: $('#pathBtn'),
 };
 export const promptEl = el.prompt, promptTxtEl = el.promptTxt;
@@ -49,6 +50,13 @@ const giftsReady = () => {
     const mins = (net.now() - S.joinedAt) / 60000;
     return FREE.filter((r, i) => mins >= r.min && !S.freeClaimed[i]).length;
 };
+// Seconds until the next unclaimed Free! gift unlocks (-1 when every gift is unlocked)
+const nextGiftIn = () => {
+    const secs = (net.now() - S.joinedAt) / 1000;
+    for (let i = 0; i < FREE.length; i++) if (!S.freeClaimed[i] && secs < FREE[i].min * 60) return FREE[i].min * 60 - secs;
+    return -1;
+};
+let giftsSeen = 0;
 export const wheelReady = () => playtimeNow() >= (S.wheelAt || 0) || S.spins > 0;
 
 // Top progress bar: the 5 stages of the world you are in, with everyone in that world on it
@@ -127,6 +135,13 @@ export function updateHud(info) {
     // Badges
     const gifts = giftsReady();
     el.giftBadge.hidden = gifts === 0; setText(el.giftBadge, String(gifts));
+    // The Free! button counts down to the next gift and pulses when one is ready
+    const giftLeft = gifts > 0 ? -1 : nextGiftIn();
+    setText(el.giftLbl, giftLeft >= 0 ? clock(giftLeft) : 'Free!');
+    el.giftLbl.classList.toggle('gift-clock', giftLeft >= 0);
+    el.giftBtn.classList.toggle('gift-ready', gifts > 0);
+    if (gifts > giftsSeen && S.joinedAt) toast('🎁 A free gift is ready! Tap Free! to claim it', '#7dff6b');
+    giftsSeen = gifts;
     el.dailyBadge.hidden = !(S.daily && S.daily.ready);
     el.wheelBadge.hidden = !wheelReady();
     document.querySelectorAll('[data-pass]').forEach((n) => {
@@ -606,7 +621,7 @@ function renderFree(body) {
         const claimed = !!S.freeClaimed[i];
         const ready = mins >= r.min;
         const btn = claimed ? 'Claimed' : ready ? 'CLAIM' : clock(r.min * 60 - mins * 60);
-        const card = rowCard(r.crate ? '📦' : r.cash ? '💵' : r.path ? '👣' : '⚡', rewardText(r), 'Play for ' + r.min + ' min', btn,
+        const card = rowCard(r.crate ? '📦' : r.cash ? '💵' : r.path ? '👣' : r.revives ? '❤️' : '⚡', rewardText(r) + (r.big ? ' ⭐' : ''), 'Play for ' + r.min + ' min', btn,
             claimed ? 'g-grey' : ready ? 'g-green' : 'g-blue', () => { if (!claimed && ready) net.send('free', { i }); }, claimed || !ready);
         card.querySelector('button').dataset.fid = 'g' + i;
         body.appendChild(card);

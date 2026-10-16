@@ -4,8 +4,10 @@
 // The loop: a long journey of glass bridges through space. Every row is a math question with a
 // number on each glass pane: step on the right answer and earn Cash, step on the wrong one and
 // the glass shatters under you. Every stage ends on a checkpoint island (your progress is saved)
-// and the math gets harder every stage. 20 stages in 2 worlds of 10, each world ending on a boss
+// and the math gets harder every stage. 40 stages in 4 worlds of 10, each world ending on a boss
 // stage with a big chest, then Rebirth for a permanent Cash bonus and do it again.
+// The ramp is long and gentle on purpose: short, easy stages first (quick wins), the hard math
+// and the combined modifiers in the later worlds, so players keep going instead of hitting a wall.
 export { questionFor, stageQuestions, rngFrom, LEVELS } from './questions.js';
 
 export const CFG = {
@@ -26,8 +28,8 @@ export const CFG = {
     streakStep: 0.05,       // +5% Cash per answer in a row...
     streakMax: 1,           // ...up to +100%
     wheelEvery: 10 * 60,    // a free Lucky Wheel spin every 10 minutes of playtime
-    crumbleSecs: 2.0,       // Crumbling Glass: a pane breaks this long after you step on it (1.6 s in World 2)
-    shuffleMs: 2200,        // Shuffle: the numbers swap panes this often (1.8 s in World 2)
+    crumbleSecs: [2.4, 2.0, 1.8, 1.6],   // Crumbling Glass: a pane breaks this long after you step on it (per world)
+    shuffleMs: [2600, 2300, 2000, 1800], // Shuffle: the numbers swap panes this often (per world)
     rebirthBonus: 0.5,      // +50% Cash per rebirth
 };
 
@@ -37,8 +39,8 @@ export const CFG = {
 export const MODS = {
     none: { name: '', icon: '', hint: '' },
     dark: { name: 'LIGHTS OUT', icon: '🌑', hint: 'The glass only lights up right in front of you' },
-    crumble: { name: 'CRUMBLING GLASS', icon: '⏳', hint: 'Every pane breaks 2 seconds after you step on it. Keep moving!' },
-    shuffle: { name: 'SHUFFLE', icon: '🔀', hint: 'The numbers swap panes every 2 seconds. Step when the right one is under you!' },
+    crumble: { name: 'CRUMBLING GLASS', icon: '⏳', hint: 'Every pane breaks a moment after you step on it. Keep moving!' },
+    shuffle: { name: 'SHUFFLE', icon: '🔀', hint: 'The numbers swap panes every few seconds. Step when the right one is under you!' },
     ghost: { name: 'GHOST GLASS', icon: '👻', hint: 'The numbers only show up in flashes. Remember them!' },
     timer: { name: 'TIME LIMIT', icon: '⏱️', hint: 'Answer every row in time, or the glass under you breaks!' },
 };
@@ -66,16 +68,21 @@ export const ALL_WORLDS = [
     { id: 'heaven', name: 'Golden Heaven', icon: '👑', color: 0xffd028, css: '#ffe14a', palette: [0xffd028, 0xfff0a0, 0xffb43a, 0xffffff, 0xffe07a, 0x8ad8ff],
         rail: 0xfff4d0, neon: 0xffd028, island: 0xfff0c8, sky: { a: 0xc0a03a, b: 0x6a8ad0, low: 0x2a2410, mid: 0x181408, top: 0x060402 }, fog: 0x30280c, mods: ['shuffle', 'dark'] },
 ];
-export const WORLD_IDS = ['station', 'candy'];
+export const WORLD_IDS = ['station', 'candy', 'ice', 'lava'];
 export const WORLDS = WORLD_IDS.map((id) => ALL_WORLDS.find((w) => w.id === id));
 export const STAGES_PER_WORLD = 10;
 export const STAGE_COUNT = WORLDS.length * STAGES_PER_WORLD;
 // The modifiers of every stage ('+' combines them). Each world ends on a boss stage.
+// World 1 brings in one modifier at a time between plain stages; combos only start at the World 2 boss.
 export const STAGE_MODS = [
-    // World 1: stages 1-10
-    'none', 'none', 'dark', 'timer', 'crumble', 'none', 'shuffle', 'ghost', 'timer', 'dark+crumble',
-    // World 2: stages 11-20
-    'ghost', 'shuffle', 'timer', 'dark+shuffle', 'crumble', 'ghost+timer', 'shuffle+crumble', 'dark+timer', 'ghost+crumble', 'dark+shuffle+timer',
+    // World 1 (Space Station): stages 1-10
+    'none', 'none', 'none', 'dark', 'none', 'timer', 'none', 'crumble', 'none', 'timer',
+    // World 2 (Candy Land): stages 11-20
+    'none', 'shuffle', 'none', 'ghost', 'dark', 'none', 'crumble', 'timer', 'shuffle', 'dark+timer',
+    // World 3 (Ice Kingdom): stages 21-30
+    'ghost', 'none', 'shuffle', 'dark+crumble', 'timer', 'ghost', 'crumble+timer', 'shuffle', 'dark+ghost', 'shuffle+crumble',
+    // World 4 (Lava Core): stages 31-40
+    'timer', 'dark+shuffle', 'ghost+timer', 'crumble', 'dark+crumble', 'shuffle+timer', 'ghost+crumble', 'dark+timer', 'shuffle+ghost', 'dark+shuffle+timer',
 ];
 
 // ---------------------------------------------------------------------------------
@@ -91,7 +98,14 @@ export const BR = {
     finalD: 70,                       // the Golden Throne after the last stage
 };
 const PANE_W = { 2: 10, 3: 8, 4: 7, 5: 6 };
-export const perRowCash = (k) => Math.floor(15 * Math.pow(1.38, k));
+export const perRowCash = (k) => Math.floor(15 * Math.pow(1.25, k));
+// Panes per row: 2 on the first stages, then 3, 4 and 5 (boss stages get one more)
+function paneCount(k, w, boss) {
+    if (w === 0) return k < 3 ? 2 : boss ? 4 : 3;
+    if (w === 1) return boss || k % 2 ? 4 : 3;
+    if (w === 2) return boss ? 5 : 4;
+    return boss || k % 2 ? 5 : 4;
+}
 function niceRound(v) { const p = Math.pow(10, Math.max(0, Math.floor(Math.log10(v)) - 1)); return Math.round(v / p) * p; }
 export const STAGES = [];
 export const ISLANDS = [null]; // ISLANDS[j] = island j (1..STAGE_COUNT): start of stage j, finish of stage j-1
@@ -102,20 +116,20 @@ export const ISLANDS = [null]; // ISLANDS[j] = island j (1..STAGE_COUNT): start 
     for (let k = 0; k < STAGE_COUNT; k++) {
         const w = Math.floor(k / STAGES_PER_WORLD), idx = k % STAGES_PER_WORLD, world = WORLDS[w];
         const boss = idx === STAGES_PER_WORLD - 1;
-        // 11 rows on Stage 1 up to 29 on the last boss; 2 panes, then 3, 4 and 5
-        const rows = 11 + Math.floor(k * 0.75) + (boss ? 4 : 0);
-        const choices = k < 2 ? 2 : k < 5 ? 3 : k < 10 ? (boss || k % 2 ? 4 : 3) : k < 15 ? 4 : (boss || k % 2 ? 5 : 4);
+        // 8 rows on Stage 1 (a first clear inside a minute) up to 29 on the last boss
+        const rows = 8 + Math.floor(k * 0.45) + (boss ? 4 : 0);
+        const choices = paneCount(k, w, boss);
         const pw = PANE_W[choices], W = choices * pw + (choices - 1) * BR.gap;
         const mods = (STAGE_MODS[k] || 'none').split('+');
         const mod = mods[0];
         const cash = perRowCash(k);
-        // The math level (0..9) climbs fast: the hardest questions start around Stage 18
-        const level = Math.min(9, Math.floor(k * 0.55));
+        // The math level (0..9) climbs one step every 4 stages: the hardest questions are in World 4
+        const level = Math.min(9, Math.floor(k / 4));
         const st = {
             k, w, idx, level, rows, choices, pw, W, mod, mods, boss, x: xs[k], y,
-            timer: Math.max(8, Math.round(13 - k * 0.25)),   // Time Limit: seconds per row
-            crumble: w === 0 ? CFG.crumbleSecs : 1.6,
-            shuffleMs: w === 0 ? CFG.shuffleMs : 1800,
+            timer: Math.max(9, Math.round(16 - k * 0.18)),   // Time Limit: seconds per row (15 s on Stage 6, 9 s by Stage 40)
+            crumble: CFG.crumbleSecs[Math.min(w, CFG.crumbleSecs.length - 1)],
+            shuffleMs: CFG.shuffleMs[Math.min(w, CFG.shuffleMs.length - 1)],
             startZ: z, startD, startX, z0: z + startD,
             cash, chest: niceRound(cash * rows * (boss ? 12 : 4)), wins: boss ? 5 : 1,
         };
@@ -160,10 +174,10 @@ export const hasMod = (st, m) => st.mods.includes(m);
 // "🌑 LIGHTS OUT + ⏱️ TIME LIMIT" (empty for a plain stage)
 export const modLabel = (st) => st.mods.filter((m) => m !== 'none').map((m) => MODS[m].icon + ' ' + MODS[m].name).join(' + ');
 // Shuffle stages: which option pane s shows at server time t (ms)
-export const shuffleShift = (t, r, choices, ms) => Math.floor((t + r * 737) / (ms || CFG.shuffleMs)) % choices;
+export const shuffleShift = (t, r, choices, ms) => Math.floor((t + r * 737) / (ms || CFG.shuffleMs[0])) % choices;
 export const shownOption = (st, r, s, t) => (hasMod(st, 'shuffle') ? (s + shuffleShift(t, r, st.choices, st.shuffleMs)) % st.choices : s);
-// Free revives: once per stage in World 1 only (always with the Infinite Revives pass)
-export const freeRevive = (st, p, run) => !!(p.passes && p.passes.InfiniteRevive) || (st.w === 0 && !run.freeUsed);
+// Free revives: once per stage in every world (always with the Infinite Revives pass)
+export const freeRevive = (st, p, run) => !!(p.passes && p.passes.InfiniteRevive) || !run.freeUsed;
 
 // ---------------------------------------------------------------------------------
 // The lobby (studs)
@@ -351,13 +365,18 @@ export const QUESTS = [
     { text: 'Clear Stage 1!', stat: 'stage', n: 1, reward: { cash: 600 }, goal: 'stage' },
     { text: 'Reach Stage 3!', stat: 'stage', n: 2, reward: { cash: 1000 }, goal: 'stage' },
     { text: 'Open a Basic Crate!', stat: 'hatched', n: 1, reward: { cash: 1500 } },
-    { text: 'Clear Stage 5!', stat: 'stage', n: 5, reward: { cash: 5000 } },
+    { text: 'Clear Stage 5!', stat: 'stage', n: 5, reward: { cash: 3000, revives: 1 } },
     { text: 'Get a streak of 15 right answers!', stat: 'bestStreak', n: 15, reward: { crate: 'Basic' } },
-    { text: 'Finish World 1 (beat the Stage 10 boss)!', stat: 'stage', n: 10, reward: { cash: 50000 } },
+    { text: 'Finish World 1 (beat the Stage 10 boss)!', stat: 'stage', n: 10, reward: { cash: 15000, revives: 2 } },
     { text: 'Answer 250 questions right!', stat: 'answers', n: 250, reward: { crate: 'Galaxy' } },
-    { text: 'Clear Stage 15!', stat: 'stage', n: 15, reward: { cash: 250000 } },
+    { text: 'Clear Stage 15!', stat: 'stage', n: 15, reward: { cash: 40000, path: 1 } },
+    { text: 'Finish World 2 (beat the Stage 20 boss)!', stat: 'stage', n: 20, reward: { cash: 150000, revives: 3 } },
     { text: 'Get a streak of 30!', stat: 'bestStreak', n: 30, reward: { crate: 'Genius' } },
-    { text: 'Finish World 2 (clear all 20 stages)!', stat: 'stage', n: 20, reward: { cash: 3000000 } },
+    { text: 'Clear Stage 25!', stat: 'stage', n: 25, reward: { cash: 500000, path: 2 } },
+    { text: 'Finish World 3 (beat the Stage 30 boss)!', stat: 'stage', n: 30, reward: { cash: 2000000, revives: 5 } },
+    { text: 'Answer 1,000 questions right!', stat: 'answers', n: 1000, reward: { crate: 'Genius' } },
+    { text: 'Clear Stage 35!', stat: 'stage', n: 35, reward: { cash: 6000000, path: 3 } },
+    { text: 'Finish World 4 (clear all 40 stages)!', stat: 'stage', n: 40, reward: { cash: 25000000 } },
     { text: 'Rebirth once!', stat: 'rebirths', n: 1, reward: { cash: 5000000 } },
     { text: 'Answer 5,000 questions right!', stat: 'answers', n: 5000, reward: { cash: 25000000 } },
     { text: 'Rebirth 5 times!', stat: 'rebirths', n: 5, reward: { cash: 100000000 } },
@@ -375,10 +394,12 @@ export function dailyStatus(p, now) {
     return { ready: true, day: streak % DAILY.length };
 }
 
-// Free! gifts: session playtime rewards (minutes since joining)
+// Free! gifts: session playtime rewards (minutes since joining). Small and often at first, then a
+// big one at 15, 30 and 60 minutes; the HUD button counts down to the next one.
 export const FREE = [
-    { min: 1, cash: 500 }, { min: 3, cash: 1500 }, { min: 6, crate: 'Basic' }, { min: 10, boost: 5 },
-    { min: 15, cash: 10000 }, { min: 25, path: 1 }, { min: 40, crate: 'Galaxy' }, { min: 60, cash: 100000 },
+    { min: 1, cash: 500 }, { min: 3, cash: 1500 }, { min: 5, crate: 'Basic' }, { min: 8, revives: 2 },
+    { min: 11, boost: 5 }, { min: 15, crate: 'Galaxy', big: true }, { min: 20, path: 1 }, { min: 25, cash: 25000 },
+    { min: 30, crate: 'Genius', big: true }, { min: 40, revives: 5 }, { min: 50, cash: 150000 }, { min: 60, crate: 'Mythic', big: true },
 ];
 
 // Redeem codes (case-insensitive, once per player)
@@ -405,7 +426,7 @@ export const SKINS = [0xf5d29a, 0xe1af87, 0xc88c5f, 0x8c5a3c, 0xf0c8a0];
 // Reward text shared by toasts and panels ({ cash, crate, boost, path })
 export function rewardText(r) {
     return [r.cash ? '+$' + fmt(r.cash) : '', r.crate ? (crateDef(r.crate) || {}).name : '', r.boost ? r.boost + ' min x2 Cash' : '',
-        r.path ? (r.path > 1 ? r.path + 'x ' : '') + 'Show Path' : ''].filter(Boolean).join(' & ');
+        r.path ? (r.path > 1 ? r.path + 'x ' : '') + 'Show Path' : '', r.revives ? r.revives + ' Revive' + (r.revives > 1 ? 's' : '') : ''].filter(Boolean).join(' & ');
 }
 
 const SUF = ['K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp'];

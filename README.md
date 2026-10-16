@@ -6,32 +6,35 @@ It shares its engine with the other Legion games (server, Bloxity login and avat
 
 ## How it plays
 
-- **A journey of 20 stages through space, in 2 worlds** of 10 stages: **Space Station** (stages 1-10) and **Candy Land** (11-20).
-  Each world has its own glass colours, sky, fog, floating props (satellites and neon cubes / lollipops and gumdrops) and space dust.
-  Stages get longer (11 to 29 rows) and get more panes per row (2, then 3, 4 and 5). 363 questions in all.
-  The game also has 8 more world themes ready (Ice Kingdom, Jungle Temple, Deep Ocean, Desert Pyramids, Lava Core, Cyber City,
-  Rainbow Galaxy, Golden Heaven): swap or add worlds in `WORLD_IDS` in `shared/config.js` (and give the new stages modifiers in `STAGE_MODS`).
+- **A journey of 40 stages through space, in 4 worlds** of 10: **Space Station** (stages 1-10), **Candy Land** (11-20),
+  **Ice Kingdom** (21-30) and **Lava Core** (31-40). Each world has its own glass colours, sky, fog, floating props and space dust.
+  Stages get longer (8 rows on Stage 1, so the first clear takes under a minute, up to 29 on the last boss) and get more panes per row
+  (2, then 3, 4 and 5). 668 questions in all, about an hour for a good player.
+  The ramp is long and gentle on purpose: quick easy wins first, the hard math and the combined modifiers in Worlds 3 and 4.
+  6 more world themes are ready (Jungle Temple, Deep Ocean, Desert Pyramids, Cyber City, Rainbow Galaxy, Golden Heaven):
+  add worlds in `WORLD_IDS` in `shared/config.js` (and give the new stages modifiers in `STAGE_MODS`).
 - **Every row is a math question.** It floats beside the row and sits in the banner at the top of the screen ("7 + 1 = ?").
   Each glass pane shows a number. Step on the right one: it lights up green, chimes and pays Cash.
   Step on the wrong one: the glass **shatters** and you fall into the void. No jumping on the glass.
 - **Checkpoint islands** between the stages. Reaching one clears the stage (Cash chest + Wins) and saves your progress.
   Falling sends you back to the start of the stage you are on, never to the lobby. The lobby's **Continue** portal (and the
   "▶ Stage N" button under your Cash) take you straight back to your checkpoint; the Teleport panel lists every stage you have reached.
-- **The math gets harder fast** (a new level about every 2 stages, the hardest from Stage 18), and the wrong numbers sit close
+- **The math gets harder step by step** (a new level every 4 stages, the hardest from Stage 37), and the wrong numbers sit close
   to the answer: adding to 10; bigger sums and "biggest / smallest number"; times tables and missing numbers;
   division and "pick the EVEN number"; big sums and x12 tables; squares, percentages and two-step sums; order of operations and fractions;
   negatives, powers and roots; equations and big multiplication; then everything at the hardest. The wrong panes are the classic mistakes.
   Every run gets a fresh seed from the server, and no question repeats inside a run (`shared/questions.js`).
-- **Stage modifiers on almost every stage** (`STAGE_MODS` in `shared/config.js`), combined from Stage 10 on:
-  **Lights Out** (the glass only lights up right in front of you), **Crumbling Glass** (every pane breaks 2 s after you step on it,
-  1.6 s in World 2), **Shuffle** (the numbers swap panes every 2.2 s, 1.8 s in World 2), **Ghost Glass** (numbers only show in flashes)
-  and **Time Limit** (each row must be answered in 12 s on Stage 4, down to 8 s by Stage 20, or the glass under you breaks).
-  Stages 10 and 20 are longer **boss stages** (Lights Out + Crumbling Glass, then Lights Out + Shuffle + Time Limit with 5 panes).
-- **Revive**: when you fall, a "Revive" button and a draining bar come up (like the reference). In World 1 the first revive each stage
-  is FREE; in World 2 revives cost Bux (or are free with the **Infinite Revives** pass), so a fall usually means a fresh start of the
-  stage with new questions. Revive puts you back on the row before.
-- **Rebirth** on the Golden Throne after Stage 20: back to Stage 1 with a permanent +50% Cash per rebirth (keeps everything else).
-- **Cash per right answer** grows 38% per stage (15 on Stage 1, about 6.8K on Stage 20), times your multipliers, plus a streak bonus
+- **Stage modifiers** (`STAGE_MODS` in `shared/config.js`): World 1 brings them in one at a time between plain stages,
+  combos start at the Stage 20 boss and fill Worlds 3 and 4:
+  **Lights Out** (the glass only lights up right in front of you), **Crumbling Glass** (every pane breaks 2.4 s after you step on it
+  in World 1, down to 1.6 s in World 4), **Shuffle** (the numbers swap panes every 2.6 s, down to 1.8 s), **Ghost Glass** (numbers only
+  show in flashes) and **Time Limit** (15 s per row on Stage 6, down to 9 s by Stage 40, or the glass under you breaks).
+  Every 10th stage is a longer **boss stage**; the last one is Lights Out + Shuffle + Time Limit with 5 panes.
+- **Revive**: when you fall, a "Revive" button and a draining bar come up (like the reference). The first revive on every stage is FREE;
+  after that a revive uses a Revive token (from Free! gifts and quests) or costs Bux (free with the **Infinite Revives** pass).
+  Otherwise the stage starts over with new questions. Revive puts you back on the row before.
+- **Rebirth** on the Golden Throne after Stage 40: back to Stage 1 with a permanent +50% Cash per rebirth (keeps everything else).
+- **Cash per right answer** grows 25% per stage (15 on Stage 1, about 1K on Stage 20 and 90K on Stage 40), times your multipliers, plus a streak bonus
   (+5% per right answer in a row, up to +100%). Each stage's chest pays 4x its rows' Cash (12x on boss stages), plus 1 Win (5 on boss stages).
 - **Top progress bar**: the 10 stages of the world you are in, with every player in that world on it.
 - **Kill All / Show Path / Skip Stage** (Bux, top of the screen, like the reference):
@@ -45,7 +48,8 @@ It shares its engine with the other Legion games (server, Bloxity login and avat
   the **Space Chest** (every 15 min) and the **Rainbow Stairs** parkour with a chest on top (every 10 min).
 - **MATH RUSH**: the last 5 minutes of every 30 (server clock) are x2 Cash for everyone (a pill on the HUD counts down).
 - **Friend Boost**: +10% Cash per Bloxity friend in your server (up to +50%).
-- Free! gifts (playtime), 7-day Daily Rewards, a quest chain (the first three are the tutorial, with guide arrows to Stage 1),
+- Free! gifts for playtime (1, 3, 5, 8, 11 minutes ... with big ones at 15, 30 and 60: Galaxy, Genius and Mythic crates; the HUD
+  button counts down to the next one and pulses when one is ready), 7-day Daily Rewards, a quest chain (the first three are the tutorial, with guide arrows to Stage 1),
   redeem codes (`RELEASE`, `MATH`, `GLASS`, `BRIDGE`, `LEGION`, `BLOXITY`) and three leaderboards (Top Stage, Top Wins, Top Cash).
 - Passes: **2x Cash**, **2x Speed**, **VIP** (x1.5 Cash, gold name, +1 pet slot), **Infinite Revives**, **Rainbow Trail**.
 

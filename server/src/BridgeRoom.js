@@ -207,6 +207,7 @@ export class BridgeRoom extends Room {
         if (r.crate) this.hatch(s, crateDef(r.crate), true);
         if (r.boost) p.boostUntil = Math.max(Date.now(), p.boostUntil || 0) + r.boost * 60000;
         if (r.path) this.givePath(s, r.path);
+        if (r.revives) p.reviveTokens = (p.reviveTokens || 0) + r.revives;
     }
     // Quest chain: completes automatically and pays its reward
     checkQuest(s) {

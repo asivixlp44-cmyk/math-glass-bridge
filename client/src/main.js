@@ -450,17 +450,40 @@ setInterval(countFriends, 20000);
 // Networking
 // =====================================================================================
 const BLOXITY_GAME_ID = import.meta.env.VITE_BLOXITY_GAME_ID || '';
-const ON_BLOXITY_HOST = /.play.bloxity.io$/.test(location.hostname);
-const DEV_CHANNEL = /.dev.play.bloxity.io$/.test(location.hostname);
+const ON_BLOXITY_HOST = /\.play\.bloxity\.io$/.test(location.hostname);
+const DEV_CHANNEL = /\.dev\.play\.bloxity\.io$/.test(location.hostname);
 const SERVER_URL = import.meta.env.VITE_SERVER_URL
-    || (ON_BLOXITY_HOST ? `https://${location.hostname.replace(/.play.bloxity.io$/, '.host.bloxity.io')}`
+    || (ON_BLOXITY_HOST ? `https://${location.hostname.replace(/\.play\.bloxity\.io$/, '.host.bloxity.io')}`
         : BLOXITY_GAME_ID ? `https://${BLOXITY_GAME_ID}.host.bloxity.io`
         : import.meta.env.DEV ? `${location.protocol}//${location.hostname}:2621` : location.origin);
+// On Legion a server can be asleep (scaled to zero) or still starting: wait for /health
+// for up to a minute instead of failing the join straight away
 async function serverEndpoint() {
-    if (!BLOXITY_GAME_ID) return SERVER_URL;
-    const r = await BX.resolveEndpoint(BLOXITY_GAME_ID, DEV_CHANNEL ? 'preview' : undefined);
-    if (r && r.cold) $('#loading').textContent = 'Waking up a server…';
-    return (r && r.endpoint) || SERVER_URL;
+    let url = SERVER_URL;
+    if (BLOXITY_GAME_ID) {
+        const r = await BX.resolveEndpoint(BLOXITY_GAME_ID, DEV_CHANNEL ? 'preview' : undefined);
+        if (r && r.cold) $('#loading').textContent = 'Waking up a server…';
+        url = (r && r.endpoint) || SERVER_URL;
+    }
+    if (!/^https?:/i.test(url)) return url;
+    if (!(await serverUp(url))) {
+        $('#loading').textContent = 'Waking up a server…';
+        const until = Date.now() + 60000;
+        while (Date.now() < until) {
+            await new Promise((res) => setTimeout(res, 2000));
+            if (await serverUp(url)) break;
+        }
+    }
+    return url;
+}
+async function serverUp(url) {
+    try {
+        const ctl = new AbortController();
+        const t = setTimeout(() => ctl.abort(), 4000);
+        const r = await fetch(url.replace(/\/$/, '') + '/health', { signal: ctl.signal, cache: 'no-store' });
+        clearTimeout(t);
+        return r.ok;
+    } catch (e) { return false; }
 }
 let lastMoveSent = 0, lastMoveKey = '';
 function sendMove(force) {
@@ -1069,7 +1092,16 @@ async function play() {
     try {
         await waitForLogin(1500);
         const saved = (storageGet('mgb_name') || '').slice(0, 20);
-        const room = await connect(BX.identity().loggedIn ? '' : saved);
+        // A server that just woke up can still refuse the first join: try a few times
+        let room = null;
+        for (let attempt = 0; !room; attempt++) {
+            try { room = await connect(BX.identity().loggedIn ? '' : saved); } catch (e) {
+                if (attempt >= 4) throw e;
+                console.warn('[join] attempt', attempt + 1, 'failed:', e && e.message);
+                $('#loading').textContent = 'Waking up a server…';
+                await new Promise((res) => setTimeout(res, 2000 * (attempt + 1)));
+            }
+        }
         const me = room.state.players && room.state.players.get(room.sessionId);
         S.name = me ? me.name : S.name;
     } catch (e) {
