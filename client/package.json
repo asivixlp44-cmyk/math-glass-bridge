@@ -1,0 +1,15 @@
+{
+  "name": "mgb-client",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5197",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@colyseus/sdk": "^0.18.4",
+    "three": "^0.186.1",
+    "vite": "^8.3.1"
+  }
+}

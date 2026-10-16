@@ -1,0 +1,5 @@
+{
+  "name": "mgb-shared",
+  "private": true,
+  "type": "module"
+}
