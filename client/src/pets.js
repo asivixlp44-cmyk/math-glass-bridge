@@ -1,5 +1,5 @@
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { T, V3, scene, mat, texFrom, FONT, NEON_BOOST } from './engine.js';
+import { T, V3, scene, mat, texFrom, FONT, NEON_BOOST, toLambert } from './engine.js';
 import { petDef } from '../../shared/config.js';
 
 // Little floating school-supply pets that follow their owner: a rounded body, ears, shiny eyes,
@@ -30,7 +30,7 @@ export function buildPet(id) {
     const g = new T.Group();
     if (!d) return g;
     const dark = d.c === 0x16121f || d.c === 0x5a3cff;
-    const bodyMat = new T.MeshStandardMaterial({ color: d.c, roughness: 0.45, metalness: 0.05, emissive: dark ? 0x2a1c6a : 0x000000 });
+    const bodyMat = toLambert({ color: d.c, roughness: 0.45, metalness: 0.05, emissive: dark ? 0x2a1c6a : 0x000000 });
     const body = new T.Mesh(BODY, bodyMat); body.castShadow = true; g.add(body);
     const earMat = new T.MeshLambertMaterial({ color: new T.Color(d.c).multiplyScalar(0.8) });
     for (const sx of [-0.45, 0.45]) { const e = new T.Mesh(EAR, earMat); e.position.set(sx, 0.9, 0); g.add(e); }

@@ -1,5 +1,5 @@
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { T, V3, scene, solids, triggers, texFrom, FONT, mat, aabb, billboard, Batch, UNIT } from './engine.js';
+import { T, V3, scene, solids, triggers, texFrom, FONT, mat, aabb, billboard, Batch, UNIT, toLambert } from './engine.js';
 import { actions, net } from './state.js';
 import { sparkleBurst, ring } from './fx.js';
 import {
@@ -524,8 +524,8 @@ function buildIsland(V, bt) {
             ? [{ t: '👑 GOLDEN THRONE 👑', c: '#ffe14a', s: '#16121f', px: 100, glow: '#ffb51c' }, { t: 'You cleared all ' + STAGE_COUNT + ' stages!', c: '#ffffff', s: '#16121f', px: 60 }]
             : [{ t: 'WORLD ' + (Math.floor(j / STAGES_PER_WORLD) + 1), c: '#ffffff', s: '#16121f', px: 80 }, { t: w2.icon + ' ' + w2.name.toUpperCase(), c: w2.css, s: '#16121f', px: 110, glow: w2.css }],
         22, new V3(isl.x, top + 27, zc), V.group);
-        const wood = new T.MeshStandardMaterial({ color: 0x8a4a22, roughness: 0.6 });
-        const gold = new T.MeshStandardMaterial({ color: 0xffc83a, roughness: 0.3, metalness: 0.8, emissive: 0x5a3800, emissiveIntensity: 0.35 });
+        const wood = toLambert({ color: 0x8a4a22, roughness: 0.6 });
+        const gold = toLambert({ color: 0xffc83a, roughness: 0.3, metalness: 0.8, emissive: 0x5a3800, emissiveIntensity: 0.35 });
         wood.userData.own = gold.userData.own = true;
         const cz = isl.z0 + 12;
         const g = new T.Group(); g.position.set(isl.x + isl.w / 2 - 9, top, cz); g.rotation.y = -0.5; V.group.add(g);

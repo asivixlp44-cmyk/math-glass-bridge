@@ -1,13 +1,13 @@
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {
-    T, V3, scene, mat, box, aabb, UNIT, solids, triggers, prompts, tickers, texFrom, billboard, FONT, studMat,
-} from './engine.js';
+    T, V3, scene, mat, box, aabb, UNIT, solids, triggers, prompts, tickers, texFrom, billboard, FONT, studMat, toLambert } from './engine.js';
 import { S, actions, net } from './state.js';
 import { buildPet } from './pets.js';
 import {
     WORLD, BR, STAGES, STAGE_COUNT, SPOTS, STAIRS, CHESTS, CRATES, PRODUCTS, WHEEL, chestCash, checkpointPos, worldOf,
     fmt, money, clock, rngFrom,
 } from '../../shared/config.js';
+import { batchStatic, skinRig } from './batch.js';
 
 export const SPAWN = new V3(WORLD.spawn.x, WORLD.spawn.y, WORLD.spawn.z);
 const HX = WORLD.halfX, Z0 = WORLD.zMin, Z1 = WORLD.zMax;
@@ -260,9 +260,9 @@ function buildCrates() {
         const cx = s.x - 4, cz = s.z - 13.5 + i * 9;
         box(7, 0.8, 7, cx, 0.4, cz, 0xffffff, { studs: true });
         const g = new T.Group(); g.position.set(cx, 3.2, cz); scene.add(g);
-        const body = new T.Mesh(new RoundedBoxGeometry(4.4, 3.4, 4.4, 3, 0.6), new T.MeshStandardMaterial({ color: c.color, roughness: 0.35, metalness: 0.2 }));
+        const body = new T.Mesh(new RoundedBoxGeometry(4.4, 3.4, 4.4, 3, 0.6), toLambert({ color: c.color, roughness: 0.35, metalness: 0.2 }));
         body.castShadow = true; g.add(body);
-        const lid = new T.Mesh(new RoundedBoxGeometry(4.8, 0.9, 4.8, 2, 0.35), new T.MeshStandardMaterial({ color: new T.Color(c.color).multiplyScalar(0.75), roughness: 0.35 }));
+        const lid = new T.Mesh(new RoundedBoxGeometry(4.8, 0.9, 4.8, 2, 0.35), toLambert({ color: new T.Color(c.color).multiplyScalar(0.75), roughness: 0.35 }));
         lid.position.y = 1.9; g.add(lid);
         const q = billboard([{ t: '?', c: '#ffffff', s: '#16121f', px: 160 }], 2.4, 256, new V3(0, 0.1, -2.3), g);
         void q;
@@ -372,7 +372,7 @@ function truss(x, z, h) {
 }
 function smallChest(x, y, z, scale) {
     const g = new T.Group(); g.position.set(x, y, z); g.scale.setScalar(scale || 1); scene.add(g);
-    const wood = mat(0x8a4a22), gold = new T.MeshStandardMaterial({ color: 0xffc83a, roughness: 0.25, metalness: 0.85, emissive: 0x6a4000, emissiveIntensity: 0.4 });
+    const wood = mat(0x8a4a22), gold = toLambert({ color: 0xffc83a, roughness: 0.25, metalness: 0.85, emissive: 0x6a4000, emissiveIntensity: 0.4 });
     const b = new T.Mesh(new RoundedBoxGeometry(3.6, 2.2, 2.4, 2, 0.3), wood); b.position.y = 1.1; b.castShadow = true; g.add(b);
     const l = new T.Mesh(new RoundedBoxGeometry(3.7, 1, 2.5, 2, 0.35), wood); l.position.y = 2.6; g.add(l);
     for (const sx of [-1.3, 1.3]) { const band = new T.Mesh(new T.BoxGeometry(0.4, 3.3, 2.55), gold); band.position.set(sx, 1.6, 0); g.add(band); }
@@ -563,4 +563,6 @@ export function buildWorld() {
     for (const k of Object.keys(boards)) drawBoard(boards[k]);
     refreshWorld();
     void triggers; void mesh; void CYL; void lamps;
+    // every box that never moves drawn together with the others that look the same
+    batchStatic(scene);
 }

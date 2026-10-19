@@ -30,26 +30,29 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-// Lit surfaces stay below 1.0 in the linear buffer so only HDR neon blooms;
-// toneMappingExposure (fx.js) brings the overall brightness back up.
-export const hemi = new T.HemisphereLight(0xd8d4ff, 0x3a2a7a, 1.35);
-export const amb = new T.AmbientLight(0xffffff, 0.4);
+// Lit like Bloxity's top games: sky / ground fill, a little ambient and the sun, no tone mapping
+export const hemi = new T.HemisphereLight(0xd8d4ff, 0x3a2a7a, 1.1);
+export const amb = new T.AmbientLight(0xffffff, 0.45);
 scene.add(hemi, amb);
-export const sun = new T.DirectionalLight(0xfff4e8, 1.55);
+export const sun = new T.DirectionalLight(0xfff3e0, 1.5);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, near: 1, far: 300 });
-sun.shadow.bias = -0.0012;
+sun.shadow.bias = -0.0008;
 sun.shadow.normalBias = 0.04;
 scene.add(sun, sun.target);
-// A cool rim light from behind the bridges so characters pop against the dark sky
-export const rim = new T.DirectionalLight(0x8a7aff, 0.6);
-rim.position.set(-60, 40, 200);
-scene.add(rim);
 
 // ----- materials & textures -----
 export const UNIT = new T.BoxGeometry(1, 1, 1);
-export const NEON_BOOST = 1.12;
+// neon stays at its own colour (there is no bloom pass to feed)
+export const NEON_BOOST = 1;
+// Matte materials only: PBR settings (roughness, metal, normal maps, environment) are dropped
+const PBR_ONLY = ['roughness', 'metalness', 'roughnessMap', 'metalnessMap', 'normalMap', 'normalScale', 'normalMapType', 'envMap', 'envMapIntensity', 'clearcoat', 'clearcoatRoughness', 'sheen', 'sheenColor', 'sheenRoughness', 'ior', 'transmission', 'thickness', 'iridescence', 'specularIntensity', 'specularColor'];
+export function toLambert(p) {
+    const q = { ...(p || {}) };
+    for (const k of PBR_ONLY) delete q[k];
+    return new T.MeshLambertMaterial(q);
+}
 const matCache = new Map();
 export function mat(color, o) {
     o = o || {};
@@ -57,11 +60,11 @@ export function mat(color, o) {
     let m = matCache.get(key);
     if (!m) {
         m = o.neon ? new T.MeshBasicMaterial({ color })
-            : o.shiny ? new T.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.25 })
+            : o.shiny ? toLambert({ color, roughness: 0.35, metalness: 0.25 })
                 : new T.MeshLambertMaterial({ color });
-        // Neon is HDR (brighter than 1) so the bloom pass picks it up
-        if (o.neon) m.color.multiplyScalar(Math.min(1.45, o.hdr || NEON_BOOST));
+        if (o.neon) m.color.multiplyScalar(NEON_BOOST); // (o.hdr only fed the old bloom pass)
         if (o.opacity && o.opacity < 1) { m.transparent = true; m.opacity = o.opacity; m.depthWrite = false; }
+        m.userData.fold = true; // a shared colour: the world batcher may bake it into vertex colours
         matCache.set(key, m);
     }
     return m;
